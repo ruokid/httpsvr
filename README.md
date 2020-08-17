@@ -1,11 +1,11 @@
-INTRO
+Intro
 -----
 简单，无依赖的http服务器
 
 Simple, no-dependence http server.
 
-INSTALL
--------
+Installation
+------------
 npm快速安装
 
 Easiest way is npm.
@@ -13,8 +13,8 @@ Easiest way is npm.
   npm install httpsvr
 ```
 
-EXAMPLE
--------
+Usage
+-----
 ```javascript
 const http = require('httpsvr');
 http.route('/api/query', (req, rsp) => {
@@ -31,3 +31,4 @@ http.createServer({
   wwwroot: '/home/xxx/www'
 }).listen(8081); //http://localhost:8081
 ```
+

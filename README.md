@@ -1,14 +1,17 @@
 INTRO
 -----
+简单，无依赖的http服务器
 
 Simple, no-dependence http server.
 
 INSTALL
 -------
+npm快速安装
 
 Easiest way is npm.
-  
+```
   npm install httpsvr
+```
 
 EXAMPLE
 -------

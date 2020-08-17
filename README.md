@@ -12,7 +12,7 @@ Easiest way is npm.
 
 EXAMPLE
 -------
-
+```javascript
 const http = require('httpsvr');
 http.route('/api/query', (req, rsp) => {
   // 注意：异常需要自行捕获，不然服务就挂了
@@ -27,3 +27,4 @@ http.createServer({
   server: 'httpsvr/1.0.0',
   wwwroot: '/home/xxx/www'
 }).listen(8081); //http://localhost:8081
+```

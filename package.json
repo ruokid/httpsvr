@@ -1,0 +1,27 @@
+{
+  "main": "httpsvr",
+  "name": "httpsvr",
+  "version": "1.0.0",
+  "homepage": "https://github.com/ruokid/httpsvr",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruokid/httpsvr.git"
+  },
+  "description": "Simple, no-dependence http server.",
+  "files": [
+    "httpsvr.js",
+    "test.js"
+  ],
+  "scripts": {
+    "test": "node test"
+  },
+  "keywords": [
+    "http",
+    "http-server"
+  ],
+  "author": {
+    "name": "ruokid",
+    "email": "imdevcx@gmail.com"
+  },
+  "license": "MIT"
+}

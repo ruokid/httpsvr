@@ -1,7 +1,7 @@
 {
   "main": "httpsvr",
   "name": "httpsvr",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "homepage": "https://github.com/ruokid/httpsvr",
   "repository": {
     "type": "git",
@@ -10,7 +10,8 @@
   "description": "Simple, no-dependence http server.",
   "files": [
     "httpsvr.js",
-    "test.js"
+    "test.js",
+    "index.html"
   ],
   "scripts": {
     "test": "node test"

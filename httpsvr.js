@@ -39,6 +39,12 @@ exports.route = function(path, methods, handler) {
     path = '/' + path;
   }
 
+  // 直接储存
+  // RIB[path] = {
+  //   methods: methods.map((m) => m.toUpperCase()),
+  //   handler: handler
+  // }
+
   // 分隔path，然后按键储存
   let rib = RIB;
   path.split('/').forEach((v) => {
@@ -123,9 +129,9 @@ exports.createServer = function(options={}) {
         [
           '[' + dtn.toISOString().substr(0, 23) + ']' + request.connection.remoteAddress,
           '-',
+          response.statusCode,
           request.method,
-          request.url,
-          response.statusCode
+          request.url
         ].join(' ')
       );
     });
@@ -133,6 +139,29 @@ exports.createServer = function(options={}) {
     request.qs = qs; //附加上解析好的查询参数对象(QueryString)
     response.setHeader('Content-Type', 'text/plain'); //默认返回文本内容
     response.setHeader('Server', server); //自定义服务器名称
+
+    // let rib = RIB[pathname];
+    // if (rib) {
+    //   if (rib.methods.length === 0 || rib.methods.indexOf(request.method) >= 0) {
+    //     rib.handler(request, response); //执行handler
+    //   }
+    //   else {
+    //     response.writeHead(405, {
+    //       Allow: rib.methods.join(',')
+    //     });
+    //     response.end();
+    //   }
+    // }
+    // else if (fs.existsSync(filename)) {
+    //   fextname = fextname[0] === '.' ? fextname.substr(1) : fextname;
+    //   response.setHeader('Content-Type', mime[fextname] || 'text/plain');
+    //   response.setHeader('Content-Length', fs.statSync(filename).size);
+    //   fs.createReadStream(filename).pipe(response);
+    // }
+    // else {
+    //   response.writeHead(404);
+    //   response.end();
+    // }
 
     let pns = [];
     let rib = RIB;

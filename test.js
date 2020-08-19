@@ -1,31 +1,49 @@
 const http = require('./httpsvr');
 
-http.route('/', (req, rsp) => {
-  rsp.writeHead(200, {'Content-Type': 'text/html'});
-  rsp.write('<html>');
-  rsp.write('<head><title>Welcome</title></head>');
-  rsp.write('<body>');
-  rsp.write('<div>');
-  rsp.write('<a href="/api/hello">/api/{action}</a>');
-  rsp.write('<input id="action" onchange="javascript:document.links[0].href=\'/api/\'+this.value" value="hello">');
-  rsp.write('</div>');
-  rsp.write('<div><a href="/api/query?id=1&page=1">/api/query</div>');
-  rsp.write('</body></html>');
+/**
+ * http://localhost:8080/api/login => req.$ => {action: 'login'}
+ * http://localhost:8080/api/query => req.$ => {action: 'query'}
+ * 
+ * http://localhost:8080/api/query?id=123&page=2
+ * req.$ => {action: 'query'}
+ * req.qs => {id: '123', page: '2'}
+ * 
+ * req.qs instanceof URLSearchParams
+ */
+http.route('/api/{action}', (req, rsp) => {
+  let qs = {};
+  Array.from(req.qs.keys()).forEach((key) => qs[key] = req.qs.get(key));
+  rsp.writeHead(200, {'Content-Type': 'application/json'});
+  rsp.end(JSON.stringify({
+    'req.$': req.$,
+    'req.qs': qs
+  }, null, 2));
+});
+
+/**
+ * http://localhost:8080/api/upload
+ * GET /api/upload => 405 Method Not Allowed
+ */
+http.route('/api/upload', 'POST', (req, rsp) => {
+  req.on('data', (chunk) => {}).on('end', () => {});
   rsp.end();
 });
 
-http.route('/api/{action}', (req, rsp) => {
-  rsp.writeHead(200, {'Content-Type': 'application/json'});
-  rsp.end(JSON.stringify(req.$));
+/**
+ * http://localhost:8080/admin/profile => req.$ => {user: 'admin'}
+ * http://localhost:8080/alice/profile => req.$ => {user: 'alice'}
+ */
+http.route('/{user}/profile', ['GET', 'POST'], (req, rsp) => {
+  rsp.end(); //default 200 OK
 });
 
-http.route('/api/query', (req, rsp) => {
-  rsp.writeHead(200, {'Content-Type': 'application/json'});
-  let qs = {};
-  Array.from(req.qs.keys()).forEach((key) => qs[key] = req.qs.get(key));
-  rsp.end(JSON.stringify(qs));
-});
-
+/**
+ * Started HTTP server on port 8080
+ * http://localhost:8080
+ * wwwroot => __dirname
+ */
 http.createServer({
+  // server: 'httpsvr/1.1.1',
+  // wwwroot: '/root/www',
   accessLog: ''
-}).listen(8080); //http://localhost:8080/
+}).listen(8080);

@@ -6,48 +6,54 @@ const URL = require('url');
 
 /**
  * routing information base
- * 
- * 以请求路径为键名保存handler和允许的methods
+ * 1.以请求路径为键名保存handler和允许的methods
+ * 2.按路径.split('/')之后储存handler和允许的methods
  */
-const RIB = {};
+const RIB = {'': {}};
 
 /**
  * 路由处理
  * @param path {String} 请求地址路径部分，不包括协议、域名和查询参数
- * @param methods {String|String[]} 允许的请求方法，默认接受所有(http.METHODS)
- * @param handler {Function} 处理函数，参数(IncomingMessage, ServerResponse)
- * @example
- *  const http = require('httpsvr');
- *  http.route('/api/query', (req, rsp) => {
- *    // 注意：异常需要自行捕获，不然服务就挂了
- *    console.log(req.qs); //=> URLSearchParams
- *    req.on('data', (chunk) => {}).on('end', () => {});
- *    rsp.end(); //default 200 OK
- *  });
+ * @param methods {String|String[]} 允许的请求方法，默认接受所有(http.METHODS)，需要大写字母
+ * @param handler {Function} 请求处理函数(IncomingMessage, ServerResponse)
  */
-function route(path, methods, handler) {
+exports.route = function(path, methods, handler) {
   switch (typeof methods) {
     case 'function':
       handler = methods;
-      methods = [];
+      methods = http.METHODS;
       break;
     case 'string':
-      methods = methods.length > 0 ? [methods] : [];
+      methods = methods.length > 0 ? [ methods ] : http.METHODS;
       break;
     case 'object':
       if (Array.isArray(methods)) {
         break;
       }
     default:
+      methods = http.METHODS;
       return;
   }
 
-  RIB[path] = {
-    methods: methods.map((m) => m.toUpperCase()),
-    handler: handler
+  if (!path.startsWith('/')) {
+    path = '/' + path;
   }
+
+  // 分隔path，然后按键储存
+  let rib = RIB;
+  path.split('/').forEach((v) => {
+    if (v.length > 0) {
+      let base = {};
+      if (v.startsWith('{') && v.endsWith('}')) {
+        base = {'*': {}};
+        v = '';
+      }
+      rib[v] = Object.assign(base, rib[v]);
+      rib = v === '' ? rib[v]['*'] : rib[v];
+    }
+  });
+  rib[''] = { path: path, methods: methods, handler: handler };
 }
-exports.route = route;
 
 /**
  * node内置的http模块，方便外部使用
@@ -58,14 +64,6 @@ exports.module = http;
  * 创建HTTP服务
  * @param {*} options 可选配置
  * @returns {http.Server} 和内置http.createServer一样
- * @example
- *  const http = require('httpsvr');
- *  http.createServer().listen(8080); //http://localhost:8080
- *  http.createServer({
- *    accessLog: '', //指定一个文件名用来写入访问日志，空字符=stdout
- *    server: 'Node.js',
- *    wwwroot: '/home/xxx/www'
- *  }).listen(8081); //http://localhost:8081
  */
 exports.createServer = function(options={}) {
   let wwwroot = options.wwwroot || __dirname;
@@ -106,11 +104,9 @@ exports.createServer = function(options={}) {
     let url = URL.parse(request.url);
     let qs = new URL.URLSearchParams(url.search);
     let pathname = url.pathname;
-    let ri = RIB[pathname];
-    let filename = Path.join(wwwroot, pathname, pathname.endsWith('/') ? 'index.html' : '');
+    let filename = Path.join(wwwroot, decodeURIComponent(pathname), pathname.endsWith('/') ? 'index.html' : '');
     let fextname = Path.extname(filename);
 
-    request.qs = qs; //附加上解析好的查询参数对象(QueryString)
     request.on('error', (err) => {
       response.writeHead(400);
       response.end();
@@ -134,29 +130,74 @@ exports.createServer = function(options={}) {
       );
     });
 
+    request.qs = qs; //附加上解析好的查询参数对象(QueryString)
     response.setHeader('Content-Type', 'text/plain'); //默认返回文本内容
     response.setHeader('Server', server); //自定义服务器名称
 
-    if (ri) {
-      if (ri.methods.length === 0 || ri.methods.indexOf(request.method) >= 0) {
-        ri.handler(request, response); //执行handler
+    let pns = [];
+    let rib = RIB;
+    let foundFile = fs.existsSync(filename);
+    let foundPath = pathname.split('/').filter((v) => v.length > 0).every((v, i, arr) => {
+      v = decodeURIComponent(v);
+      if (rib.hasOwnProperty(v)) { //存在已保存路径
+        rib = rib[v];
+        return true;
+      }
+
+      let wildcard = rib['']['*'];
+      if (wildcard) { //存在路径参数
+        pns.push(v); //保存参数
+        rib = wildcard;
+        // 如果这个文件存在并且路径参数在最后一位，那么等下就直接进入文件服务
+        return !foundFile || i + 1 < arr.length;
+      }
+    }); //路径完全匹配（包含参数）
+
+    rib = rib[''];
+
+    if (foundPath && rib.handler) {
+      if (rib.methods.includes(request.method)) {
+        request['$'] = {};
+        rib.path.split('/')
+          .filter((v) => v.length > 0 && v.startsWith('{') && v.endsWith('}'))
+          .forEach((v, i) => {
+            request['$'][v.substring(1, v.length - 1)] = pns[i];
+          });
+        try {
+          rib.handler(request, response); //执行handler
+        }
+        catch {
+          if (!response.finished) {
+            response.writeHead(500);
+            response.end();
+          }
+        }
       }
       else {
         response.writeHead(405, {
-          Allow: ri.methods.join(',')
+          Allow: rib.methods.join(',')
         });
         response.end();
       }
     }
-    else if (fs.existsSync(filename)) {
+    else if (foundFile) {
       fextname = fextname[0] === '.' ? fextname.substr(1) : fextname;
       response.setHeader('Content-Type', mime[fextname] || 'text/plain');
-      response.setHeader('Content-Length', fs.statSync(filename).size);
-      fs.createReadStream(filename).pipe(response);
+      // fs.createReadStream(filename).pipe(response);
+      fs.stat(filename, (err, stats) => {
+        if (!err && stats.isFile()) {
+          response.setHeader('Content-Length', stats.size);
+          fs.createReadStream(filename).pipe(response);
+        }
+        else {
+          response.writeHead(404);
+          response.end();
+        }
+      });
     }
     else {
       response.writeHead(404);
       response.end();
     }
-  })
+  });
 };

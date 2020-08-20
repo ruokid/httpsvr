@@ -46,8 +46,8 @@ http.route('/api/upload', 'POST', (req, rsp) => {
 });
 
 /**
- * http://localhost:8080/admin/profile => req.$ => {user: 'admin'}
- * http://localhost:8080/alice/profile => req.$ => {user: 'alice'}
+ * http://localhost:8080/admin/profile => req.$path => {user: 'admin'}
+ * http://localhost:8080/alice/profile => req.$path => {user: 'alice'}
  */
 http.route('/{user}/profile', ['GET', 'POST'], (req, rsp) => {
   req.on('data', (chunk) => {}).on('end', () => {}); //if set nodata

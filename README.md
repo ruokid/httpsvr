@@ -19,12 +19,12 @@ Usage
 const http = require('httpsvr');
 
 /**
- * http://localhost:8080/api/login => req.$path => {action: 'login'}
- * http://localhost:8080/api/query => req.$path => {action: 'query'}
+ * http://localhost:8080/api/login => req.$action => 'query'
+ * http://localhost:8080/api/query => req.$action => 'query'
  * 
  * http://localhost:8080/api/query?id=123&page=2
  * req.$ => {id: '123', page: '2'} instanceof URLSearchParams
- * req.$path => {action: 'query'}
+ * req.$action => 'query'
  */
 http.route('/api/{action}', (req, rsp) => {
   let qs = {};
@@ -32,7 +32,7 @@ http.route('/api/{action}', (req, rsp) => {
   rsp.writeHead(200, {'Content-Type': 'application/json'});
   rsp.end(JSON.stringify({
     'req.$': qs,
-    'req.$path': req.$path
+    'req.$action': req.$action
   }, null, 2));
 });
 
@@ -41,16 +41,22 @@ http.route('/api/{action}', (req, rsp) => {
  * GET /api/upload => 405 Method Not Allowed
  */
 http.route('/api/upload', 'POST', (req, rsp) => {
-  // req.data => Buffer
-  rsp.end();
+  let formString = req.data.toString('utf8'); //req.data => Buffer
+  rsp.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  rsp.end(decodeURIComponent(formString));
 });
 
 /**
- * http://localhost:8080/admin/profile => req.$path => {user: 'admin'}
- * http://localhost:8080/alice/profile => req.$path => {user: 'alice'}
+ * http://localhost:8080/admin/info/login
+ * req.$user => 'admin'
+ * req.$action => 'login'
+ * 
+ * http://localhost:8080/alice/info/logout
+ * req.$user => 'alice'
+ * req.$action => 'logout'
  */
-http.route('/{user}/profile', ['GET', 'POST'], (req, rsp) => {
-  req.on('data', (chunk) => {}).on('end', () => {}); //if set nodata
+http.route('/{user}/info/{action}', ['GET', 'POST'], (req, rsp) => {
+  req.on('data', (chunk) => {}).on('end', () => {}); //if set nodata = true
   rsp.end(); //default 200 OK
 }, {nodata: true});
 

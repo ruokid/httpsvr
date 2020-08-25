@@ -19,7 +19,7 @@ Usage
 const http = require('httpsvr');
 
 /**
- * http://localhost:8080/api/login => req.$action => 'query'
+ * http://localhost:8080/api/login => req.$action => 'login'
  * http://localhost:8080/api/query => req.$action => 'query'
  * 
  * http://localhost:8080/api/query?id=123&page=2

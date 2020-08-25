@@ -153,21 +153,20 @@ exports.createServer = function(options={}) {
       let wildcard = rib['']['*'];
       if (wildcard) { //存在路径参数
         pns.push(v); //保存参数
-        rib = wildcard;
         // 如果这个文件存在并且路径参数在最后一位，那么等下就直接进入文件服务
-        return !foundFile || i + 1 < arr.length;
+        if (!foundFile || i + 1 < arr.length) {
+          rib = wildcard;
+          return true;
+        }
       }
     }); //路径完全匹配（包含参数）
-
     rib = rib[''];
-
-    if (foundPath && rib.handler) {
+    if (foundPath && rib && rib.handler) {
       if (rib.methods.includes(request.method)) {
-        request.$path = {}; //路径参数
         rib.path.split('/')
           .filter((v) => v.length > 0 && v.startsWith('{') && v.endsWith('}'))
           .forEach((v, i) => {
-            request.$path[v.substring(1, v.length - 1)] = pns[i];
+            request['$' + v.substring(1, v.length - 1)] = pns[i]; //路径参数
           });
 
         try {
@@ -200,7 +199,6 @@ exports.createServer = function(options={}) {
     else if (foundFile) {
       fextname = fextname[0] === '.' ? fextname.substr(1) : fextname;
       response.setHeader('Content-Type', mime[fextname] || 'text/plain');
-      // fs.createReadStream(filename).pipe(response);
       fs.stat(filename, (err, stats) => {
         if (!err && stats.isFile()) {
           response.setHeader('Content-Length', stats.size);

@@ -1,14 +1,18 @@
 <html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Test page - httpsvr</title>
   </head>
   <body>
     <div>
-      <a href="http://localhost:8080/api/hello">/api/{action}</a>
+      <a href="/api/hello">/api/{action}</a>
       <input id="action" onchange="javascript:document.links[0].href='/api/'+this.value" value="hello">
     </div>
-    <div><a href="http://localhost:8080/api/query?id=1&amp;page=1">/api/query?id=123&page=2</a></div>
-    <div><a href="http://localhost:8080/api/upload">/api/upload</a></div>
+    <div><a href="/api/query?id=123&page=2">/api/query?id=123&page=2</a></div>
+    <form action="/api/upload" method="post">
+      <p>id: <input type="text" name="id" value="1" /></p>
+      <p>name: <input type="text" name="name" value="法外狂徒张三" /></p>
+      <input type="submit" value="Submit => /api/upload" />
+    </form>
   </body>
 </html>

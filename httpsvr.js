@@ -150,12 +150,12 @@ exports.createServer = function(options={}) {
         return true;
       }
 
-      let wildcard = rib['']['*'];
-      if (wildcard) { //存在路径参数
+      let ri = rib[''];
+      if (ri && ri.hasOwnProperty('*')) { //存在路径参数
         pns.push(v); //保存参数
         // 如果这个文件存在并且路径参数在最后一位，那么等下就直接进入文件服务
         if (!foundFile || i + 1 < arr.length) {
-          rib = wildcard;
+          rib = ri['*'];
           return true;
         }
       }

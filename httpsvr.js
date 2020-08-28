@@ -3,6 +3,7 @@ const fs = require('fs');
 const http = require('http');
 const Path = require('path');
 const URL = require('url');
+const { resolve } = require('path');
 
 /**
  * routing information base
@@ -32,8 +33,11 @@ exports.route = function(path, methods, handler, options={}) {
         break;
       }
     default:
-      methods = http.METHODS;
       return;
+  }
+
+  if (typeof handler !== 'function') {
+    return;
   }
 
   if (!path.startsWith('/')) {
@@ -57,7 +61,18 @@ exports.route = function(path, methods, handler, options={}) {
   rib[''] = Object.assign(options, {
     path: path,
     methods: methods,
-    handler: handler
+    handler(request, response) {
+      try {
+        handler(request, response);
+      }
+      catch (err) {
+        console.error(err);
+        if (!response.finished) {
+          response.writeHead(500);
+          response.end();
+        }
+      }
+    }
   });
 }
 
@@ -169,24 +184,16 @@ exports.createServer = function(options={}) {
             request['$' + v.substring(1, v.length - 1)] = pns[i]; //路径参数
           });
 
-        try {
-          if (rib.nodata) {
-            rib.handler(request, response); //自行接收数据
-          }
-          else {
-            request.data = Buffer.from([]);
-            request.on('data', (chunk) => {
-              request.data = Buffer.concat([request.data, chunk], request.data.length + chunk.length);
-            }).on('end', () => {
-              rib.handler(request, response); //数据接收完毕
-            });
-          }
+        if (rib.nodata) {
+          rib.handler(request, response); //自行接收数据
         }
-        catch {
-          if (!response.finished) {
-            response.writeHead(500);
-            response.end();
-          }
+        else {
+          request.data = Buffer.from([]);
+          request.on('data', (chunk) => {
+            request.data = Buffer.concat([request.data, chunk], request.data.length + chunk.length);
+          }).on('end', () => {
+            rib.handler(request, response); //数据接收完毕
+          });
         }
       }
       else {
